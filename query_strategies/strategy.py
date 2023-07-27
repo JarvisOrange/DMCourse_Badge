@@ -1,15 +1,12 @@
 import numpy as np
 from torch import nn
-import sys
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from copy import deepcopy
-import pdb
-import resnet
-from torch.distributions.categorical import Categorical
+
 class Strategy:
     def __init__(self, X, Y, idxs_lb, net, handler, args):
         self.X = X
@@ -300,18 +297,24 @@ class Strategy:
                     probs[i][idxs] += F.softmax(out, dim=1).cpu().data
             return probs
 
-    def get_embedding(self, X, Y):
+    def get_embedding(self, X, Y, return_probs, exp=True):
         loader_te = DataLoader(self.handler(X, Y, transform=self.args['transformTest']),
                             shuffle=False, **self.args['loader_te_args'])
         self.clf.eval()
         embedding = torch.zeros([len(Y), self.clf.get_embedding_dim()])
+        probs = torch.zeros([len(Y), len(np.unique(self.Y))])
         with torch.no_grad():
             for x, y, idxs in loader_te:
                 x, y = Variable(x.cuda()), Variable(y.cuda())
                 out, e1 = self.clf(x)
                 embedding[idxs] = e1.data.cpu()
-        
-        return embedding
+                if exp: out = F.softmax(out, dim=1)
+                probs[idxs] = out.cpu().data
+        if return_probs:
+            return embedding, probs
+        else:
+            return embedding
+
 
     # gradient embedding for badge (assumes cross-entropy loss)
     def get_grad_embedding(self, X, Y, model=[]):
