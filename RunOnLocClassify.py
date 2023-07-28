@@ -246,5 +246,5 @@ for rd in range(1, NUM_ROUND+1):
     print(str(sum(idxs_lb)) + '\t' + 'testing accuracy {}'.format(acc[rd]), flush=True)
     if sum(~strategy.idxs_lb) < opts.nQuery: break
     if opts.rounds > 0 and rd == (opts.rounds - 1): break
+    Logger.save_result()
 
-Logger.save_result()
