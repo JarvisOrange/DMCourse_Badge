@@ -34,7 +34,7 @@ class CoreSet(Strategy):
         t_start = datetime.now()
         idxs_unlabeled = np.arange(self.n_pool)[~self.idxs_lb]
         lb_flag = self.idxs_lb.copy()
-        embedding = self.get_embedding(self.X, self.Y)
+        embedding = self.get_embedding(self.X, self.Y, False)
         embedding = embedding.numpy()
 
         chosen = self.furthest_first(embedding[idxs_unlabeled, :], embedding[lb_flag, :], n)
