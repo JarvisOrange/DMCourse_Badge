@@ -241,13 +241,15 @@ class Strategy:
 
         self.clf.eval()
         P = torch.zeros(len(Y)).long()
+        preds = torch.zeros(len(Y), 19)
         with torch.no_grad():
             for x, y, idxs in loader_te:
                 x, y = Variable(x.cuda()), Variable(y.cuda())
                 out, e1 = self.clf(x)
                 pred = out.max(1)[1]
                 P[idxs] = pred.data.cpu()
-        return P
+                preds[idxs] = out.data.cpu()
+        return P, preds
 
     def predict_prob(self, X, Y, model=[], exp=True):
         if type(model) == list: model = self.clf

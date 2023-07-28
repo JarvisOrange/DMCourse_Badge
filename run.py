@@ -58,8 +58,8 @@ if 'CIFAR' in opts.data: opts.lamb = 1e-2
 # non-openml data defaults
 args_pool = {'MNIST':
                 {'n_epoch': 10, 'transform': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
-                 'loader_tr_args':{'batch_size': 64, 'num_workers': 1},
-                 'loader_te_args':{'batch_size': 1000, 'num_workers': 1},
+                 'loader_tr_args':{'batch_size': 64, 'num_workers': 0},
+                 'loader_te_args':{'batch_size': 1000, 'num_workers': 0},
                  'optimizer_args':{'lr': 0.01, 'momentum': 0.5}},
             'FashionMNIST':
                 {'n_epoch': 10, 'transform': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
@@ -81,7 +81,13 @@ args_pool = {'MNIST':
                  'loader_tr_args':{'batch_size': 128, 'num_workers': 1},
                  'loader_te_args':{'batch_size': 1000, 'num_workers': 1},
                  'optimizer_args':{'lr': 0.05, 'momentum': 0.3},
-                 'transformTest': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])}
+                 'transformTest': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])},
+                'Beijing': {
+                    'n_epoch':10,
+                    'loader_tr_args': {"batch_size": 64, 'num_workers':0},
+                     'loader_te_args':{'batch_size': 1000, 'num_workers': 0},
+                     'optimizer_args':{'lr': 0.01, 'momentum': 0.5},
+                }
                 }
 opts.nClasses = 10
 if opts.aug == 0: 
@@ -90,7 +96,8 @@ args_pool['MNIST']['transformTest'] = args_pool['MNIST']['transform']
 args_pool['FashionMNIST']['transformTest'] = args_pool['FashionMNIST']['transform']
 args_pool['SVHN']['transformTest'] = args_pool['SVHN']['transform']
 
-if opts.did == 0: args = args_pool[DATA_NAME]
+if opts.did == 0:
+    args = args_pool[DATA_NAME]
 if not os.path.exists(opts.path):
     os.makedirs(opts.path)
 

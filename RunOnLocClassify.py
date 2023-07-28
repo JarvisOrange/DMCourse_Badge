@@ -18,6 +18,21 @@ import torch
 import time
 import pdb
 from scipy.stats import zscore
+import pandas as pd
+
+class logger():
+    def __init__(self, path):
+        self.path = path
+        self.result = ""
+
+    def log(self, result):
+        self.result  += result +"\n"
+
+    def save_result(self):
+        with open(self.path, "w") as file:
+            file.write(self.result)
+        file.close()
+
 
 from query_strategies import RandomSampling, BadgeSampling, \
                                 BaselineSampling, LeastConfidence, MarginSampling, \
@@ -36,7 +51,7 @@ parser.add_argument('--path', help='data path', type=str, default='data')
 parser.add_argument('--data', help='dataset (non-openML)', type=str, default='')
 parser.add_argument('--nQuery', help='number of points to query in a batch', type=int, default=100)
 parser.add_argument('--nStart', help='number of points to start', type=int, default=100)
-parser.add_argument('--nEnd', help = 'total number of points to query', type=int, default=50000)
+parser.add_argument('--nEnd', help = 'total number of points to query', type=int, default=200)
 parser.add_argument('--nEmb', help='number of embedding dims (mlp)', type=int, default=128)
 parser.add_argument('--rounds', help='number of rounds (0 does entire dataset)', type=int, default=0)
 parser.add_argument('--trunc', help='dataset truncation (-1 is no truncation)', type=int, default=-1)
@@ -146,17 +161,12 @@ class mlpMod(nn.Module):
 net = mlpMod(opts.dim, embSize=opts.nEmb)
 
 
-
 if type(X_tr[0]) is not np.ndarray:
     X_tr = X_tr.numpy()
 
-# set up the specified sampler
-
-strategy = BadgeSampling(X_tr, Y_tr, idxs_lb, net, handler, args)
 
 # print info
-print(DATA_NAME, flush=True)
-print(type(strategy).__name__, flush=True)
+
 
 if type(X_te) == torch.Tensor: X_te = X_te.numpy()
 if opts.alg == 'rand': # random sampling
@@ -182,12 +192,35 @@ elif opts.alg == 'albl': # active learning by learning
 else:
     print('choose a valid acquisition function', flush=True)
     raise ValueError
+print(DATA_NAME, flush=True)
+print(type(strategy).__name__, flush=True)
+
+Logger = logger("./result/"+opts.alg+'.txt')
+
 # round 0 accuracy
-strategy.train()
-P = strategy.predict(X_te, Y_te)
+strategy.train(verbose=False)
+P, Preds = strategy.predict(X_te, Y_te)
 acc = np.zeros(NUM_ROUND+1)
 acc[0] = 1.0 * (Y_te == P).sum().item() / len(Y_te)
+
+def top_n_accuracy(truths, preds, n):
+    best_n = np.argsort(preds, axis=1)[:, -n:]
+    successes = 0
+    for i, truth in enumerate(truths):
+        if truth in best_n[i, :]:
+            successes += 1
+    return float(successes) / truths.shape[0]
+
+
+def cal_metric(pre_dists, labels, top_n_list=[1,2,3,4,5]):
+    top_n_acc = [top_n_accuracy(labels, pre_dists, n) for n in top_n_list]
+    score_series = pd.Series(top_n_acc,
+                             index=['acc@{}'.format(n) for n in top_n_list])
+    return score_series
+res = cal_metric(Preds, Y_te)
+Logger.log('Round 0: \ttesting acc@1 {}, acc@5 {}'.format(res['acc@1'], res['acc@5']))
 print(str(opts.nStart) + '\ttesting accuracy {}'.format(acc[0]), flush=True)
+
 
 for rd in range(1, NUM_ROUND+1):
     print('Round {}'.format(rd), flush=True)
@@ -202,13 +235,16 @@ for rd in range(1, NUM_ROUND+1):
     idxs_lb[q_idxs] = True
 
     # update
-    strategy.update(idxs_lb)
+    strategy.update(idxs_lb )
     strategy.train(verbose=False)
 
     # round accuracy
-    P = strategy.predict(X_te, Y_te)
+    P, Preds = strategy.predict(X_te, Y_te)
     acc[rd] = 1.0 * (Y_te == P).sum().item() / len(Y_te)
+    res = cal_metric(Preds,Y_te)
+    Logger.log('Round {}: \ttesting acc@1 {}, acc@5 {}'.format(rd, res['acc@1'], res['acc@5']))
     print(str(sum(idxs_lb)) + '\t' + 'testing accuracy {}'.format(acc[rd]), flush=True)
     if sum(~strategy.idxs_lb) < opts.nQuery: break
     if opts.rounds > 0 and rd == (opts.rounds - 1): break
 
+Logger.save_result()
