@@ -26,7 +26,7 @@ class logger():
         self.result = ""
 
     def log(self, result):
-        self.result  += result +"\n"
+        self.result += result +"\n"
 
     def save_result(self):
         with open(self.path, "w") as file:
@@ -49,9 +49,9 @@ parser.add_argument('--lr', help='learning rate', type=float, default=1e-4)
 parser.add_argument('--model', help='model - resnet, vgg, or mlp', type=str, default='mlp')
 parser.add_argument('--path', help='data path', type=str, default='data')
 parser.add_argument('--data', help='dataset (non-openML)', type=str, default='')
-parser.add_argument('--nQuery', help='number of points to query in a batch', type=int, default=100)
-parser.add_argument('--nStart', help='number of points to start', type=int, default=100)
-parser.add_argument('--nEnd', help = 'total number of points to query', type=int, default=5000)
+parser.add_argument('--nQuery', help='number of points to query in a batch', type=int, default=200)
+parser.add_argument('--nStart', help='number of points to start', type=int, default=1000)
+parser.add_argument('--nEnd', help = 'total number of points to query', type=int, default=11636)
 parser.add_argument('--nEmb', help='number of embedding dims (mlp)', type=int, default=128)
 parser.add_argument('--rounds', help='number of rounds (0 does entire dataset)', type=int, default=0)
 parser.add_argument('--trunc', help='dataset truncation (-1 is no truncation)', type=int, default=-1)
