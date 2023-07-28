@@ -19,7 +19,12 @@ import time
 import pdb
 from scipy.stats import zscore
 
-from query_strategies import BadgeSampling
+from query_strategies import RandomSampling, BadgeSampling, \
+                                BaselineSampling, LeastConfidence, MarginSampling, \
+                                EntropySampling, CoreSet, ActiveLearningByLearning, \
+                                LeastConfidenceDropout, MarginSamplingDropout, EntropySamplingDropout, \
+                                KMeansSampling, KCenterGreedy, BALDDropout, CoreSet, \
+                                AdversarialBIM, AdversarialDeepFool, ActiveLearningByLearning, BaitSampling
 
 
 parser = argparse.ArgumentParser()
@@ -154,7 +159,29 @@ print(DATA_NAME, flush=True)
 print(type(strategy).__name__, flush=True)
 
 if type(X_te) == torch.Tensor: X_te = X_te.numpy()
-
+if opts.alg == 'rand': # random sampling
+    strategy = RandomSampling(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'bait': # bait sampling
+    strategy = BaitSampling(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'conf': # confidence-based sampling
+    strategy = LeastConfidence(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'marg': # margin-based sampling
+    strategy = MarginSampling(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'badge': # batch active learning by diverse gradient embeddings
+    strategy = BadgeSampling(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'coreset': # coreset sampling
+    strategy = CoreSet(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'entropy': # entropy-based sampling
+    strategy = EntropySampling(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'baseline': # badge but with k-DPP sampling instead of k-means++
+    strategy = BaselineSampling(X_tr, Y_tr, idxs_lb, net, handler, args)
+elif opts.alg == 'albl': # active learning by learning
+    albl_list = [LeastConfidence(X_tr, Y_tr, idxs_lb, net, handler, args),
+        CoreSet(X_tr, Y_tr, idxs_lb, net, handler, args)]
+    strategy = ActiveLearningByLearning(X_tr, Y_tr, idxs_lb, net, handler, args, strategy_list=albl_list, delta=0.1)
+else:
+    print('choose a valid acquisition function', flush=True)
+    raise ValueError
 # round 0 accuracy
 strategy.train()
 P = strategy.predict(X_te, Y_te)
