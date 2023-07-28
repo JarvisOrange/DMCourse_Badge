@@ -66,7 +66,7 @@ def init_centers(X1, X2, chosen, chosen_list,  mu, D2):
         mu.append(((X1[0][ind], X1[1][ind]), (X2[0][ind], X2[1][ind])))
     chosen.add(ind)
     chosen_list.append(ind)
-    print(str(len(mu)) + '\t' + str(sum(D2)), flush=True)
+    # print(str(len(mu)) + '\t' + str(sum(D2)), flush=True)
     return chosen, chosen_list, mu, D2
 
 class BadgeSampling(Strategy):
